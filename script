@@ -1,0 +1,97 @@
+// ==UserScript==
+// @id prodota.ru-ignore@scriptish
+// @[member='name'] prodota.ru-ignore
+// @[member='Version.rOllan'] 1.1
+// @[member='name']space
+// @author 2poy_nyasha
+// @description
+// @include http://prodota.ru/forum/index.php?showtopic=*
+// @run-at document-end
+// ==/UserScript==
+;(function() {
+function random (from, to) {
+  var min = to ? from : 0,
+   max = to ? to : from;
+  return Math.floor(Math.random() * (max + 1)) + min;
+}
+function getText(len) {
+  var list = ['коооооо', 'ко-ко', 'ко', 'кудах-тах-тах', 'ку-ка-ре-ку', 'ко-ко-ко', 'ко', 'кооококо', 'коко', 'кудах', 'кукарекууууу'];
+  if( ! len) {
+   return list[random(list.length - 1)];
+  }
+  if(len > 240) len = 240;
+  var text = "";
+  while( ! false) {
+   text += list[random(list.length - 1)] + (random(10) < 8 ? '-' : '<br> ');
+   if(text.length > len) break;
+  }
+  return text.slice(0, text.length - 1);
+}
+function getButton (text, userId, onclick) {
+  var li = document.createElement('li'),
+   a = document.createElement('a');
+  a.innerHTML = text;
+  a.setAttribute('class', 'ipsButton_secondary');
+  a.setAttribute('href', 'javascript:;');
+  a.setAttribute('uid', userId);
+  a.addEventListener('click', onclick);
+  li.appendChild(a);
+  return li;
+}
+function hidePost (post) {
+  var avatar = post.querySelector('.ipsUserPhoto'),
+   text = post.querySelector('.post.entry-content'),
+   title = post.querySelector('.group_title'),
+   icons = post.querySelector('.group_icon img'),
+   nickName = post.querySelector('[itemprop="name"]')
+  avatar.setAttribute('src', 'http://www.vokrugsveta.ru/img/cmn/2014/08/28/047.jpg');
+  icons.setAttribute('src', 'http://puu.sh/bTY2z/2668b76670.gif');
+  title.innerHTML = 'Главный Петух';
+  var postText = text.innerHTML.replace(/<([a-z][a-z0-9]*)[^>]*?(\/?)>/gi, '');
+  postText = postText.replace(/ +/gi, ' ');
+  text.innerHTML = '<span style="color:red">' + getText(postText.length - 45).toUpperCase() + '</span>';
+  var nick = nickName.innerHTML,
+   rnd = random(nick.length);
+  nickName.innerHTML = nick.slice(0, rnd) + '-' + getText() + '-' + nick.slice(rnd);
+}
+function addIgnore (userId) {
+  localStorage.setItem('banned2', getIgnore() + userId + '.');
+}
+function getIgnore () {
+  return localStorage.getItem('banned2') || '.';
+}
+function removeIgnore (userId) {
+  localStorage.setItem('banned2', getIgnore().split(userId+'.').join(''));
+}
+function ignoreHandle (ev) {
+  var target = ev.target,
+   post   = target.parentNode.parentNode.parentNode.parentNode, // этого никто не видел
+   userId = target.getAttribute('uid');
+  addIgnore(userId);
+  hidePost(post);
+}
+/**
+  * start app
+  */
+var posts = document.querySelectorAll('.post_wrap'),
+  ignored = getIgnore();
+for (var i = posts.length - 1; i >= 0; i--) {
+  var el = posts[i];
+  var buttons = el.querySelector('.post_controls'),
+   userId = el.querySelector('[hovercard-id]').getAttribute('hovercard-id');
+  if(ignored.indexOf('.' + userId + '.') !== -1) {
+   var button = getButton('Распетушить', userId, (function(user) {
+return function() {
+removeIgnore(user);
+location.reload();
+}
+   })(userId));
+   buttons.insertBefore(button, buttons.firstChild);
+   hidePost(el);
+  }
+  else {
+   var button = getButton('Запетушить', userId, ignoreHandle);
+   buttons.insertBefore(button, buttons.firstChild);
+  }
+}
+}());
